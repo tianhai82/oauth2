@@ -51,6 +51,9 @@ type Token struct {
 	// mechanisms for that TokenSource will not be used.
 	Expiry time.Time
 
+	// RefreshTokenExpiry is the optional expiration time of the refresh token.
+	RefreshTokenExpiry time.Time
+
 	// Raw optionally contains extra metadata from the server
 	// when updating a token.
 	Raw interface{}
@@ -59,14 +62,22 @@ type Token struct {
 // tokenJSON is the struct representing the HTTP response from OAuth2
 // providers returning a token in JSON form.
 type tokenJSON struct {
-	AccessToken  string         `json:"access_token"`
-	TokenType    string         `json:"token_type"`
-	RefreshToken string         `json:"refresh_token"`
-	ExpiresIn    expirationTime `json:"expires_in"` // at least PayPal returns string, while most return number
+	AccessToken           string         `json:"access_token"`
+	TokenType             string         `json:"token_type"`
+	RefreshToken          string         `json:"refresh_token"`
+	ExpiresIn             expirationTime `json:"expires_in"`               // at least PayPal returns string, while most return number
+	RefreshTokenExpiresIn expirationTime `json:"refresh_token_expires_in"` // at least PayPal returns string, while most return number
 }
 
 func (e *tokenJSON) expiry() (t time.Time) {
 	if v := e.ExpiresIn; v != 0 {
+		return time.Now().Add(time.Duration(v) * time.Second)
+	}
+	return
+}
+
+func (e *tokenJSON) refreshTokenExpiry() (t time.Time) {
+	if v := e.RefreshTokenExpiresIn; v != 0 {
 		return time.Now().Add(time.Duration(v) * time.Second)
 	}
 	return
@@ -264,17 +275,23 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 		if expires != 0 {
 			token.Expiry = time.Now().Add(time.Duration(expires) * time.Second)
 		}
+		rte := vals.Get("refresh_token_expires_in")
+		refreshTokenExpires, _ := strconv.Atoi(rte)
+		if refreshTokenExpires != 0 {
+			token.RefreshTokenExpiry = time.Now().Add(time.Duration(refreshTokenExpires) * time.Second)
+		}
 	default:
 		var tj tokenJSON
 		if err = json.Unmarshal(body, &tj); err != nil {
 			return nil, err
 		}
 		token = &Token{
-			AccessToken:  tj.AccessToken,
-			TokenType:    tj.TokenType,
-			RefreshToken: tj.RefreshToken,
-			Expiry:       tj.expiry(),
-			Raw:          make(map[string]interface{}),
+			AccessToken:        tj.AccessToken,
+			TokenType:          tj.TokenType,
+			RefreshToken:       tj.RefreshToken,
+			Expiry:             tj.expiry(),
+			RefreshTokenExpiry: tj.refreshTokenExpiry(),
+			Raw:                make(map[string]interface{}),
 		}
 		json.Unmarshal(body, &token.Raw) // no error checks for optional fields
 	}

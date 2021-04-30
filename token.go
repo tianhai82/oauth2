@@ -20,6 +20,7 @@ import (
 // expired than its actual expiration time. It is used to avoid late
 // expirations due to client-server time mismatches.
 const expiryDelta = 10 * time.Second
+const refreshTokenExpiryDelta = 5 * 24 * time.Hour
 
 // Token represents the credentials used to authorize
 // the requests to access protected resources on the OAuth 2.0
@@ -48,6 +49,9 @@ type Token struct {
 	// token forever and RefreshToken or equivalent
 	// mechanisms for that TokenSource will not be used.
 	Expiry time.Time `json:"expiry,omitempty"`
+
+	// RefreshTokenExpiry is the optional expiration time of the refresh token.
+	RefreshTokenExpiry time.Time `json:"refreshTokenExpiry,omitempty"`
 
 	// raw optionally contains extra metadata from the server
 	// when updating a token.
@@ -130,6 +134,20 @@ func (t *Token) expired() bool {
 	return t.Expiry.Round(0).Add(-expiryDelta).Before(timeNow())
 }
 
+// refreshTokenExpired reports whether the refresh token is expired.
+// t must be non-nil.
+func (t *Token) refreshTokenExpired() bool {
+	if t.RefreshTokenExpiry.IsZero() {
+		return false
+	}
+	return t.RefreshTokenExpiry.Round(0).Add(-refreshTokenExpiryDelta).Before(timeNow())
+}
+
+// RefreshTokenValid reports whether t is non-nil, has an RefreshToken, and is not expired.
+func (t *Token) RefreshTokenValid() bool {
+	return t != nil && t.RefreshToken != "" && !t.refreshTokenExpired()
+}
+
 // Valid reports whether t is non-nil, has an AccessToken, and is not expired.
 func (t *Token) Valid() bool {
 	return t != nil && t.AccessToken != "" && !t.expired()
@@ -142,11 +160,12 @@ func tokenFromInternal(t *internal.Token) *Token {
 		return nil
 	}
 	return &Token{
-		AccessToken:  t.AccessToken,
-		TokenType:    t.TokenType,
-		RefreshToken: t.RefreshToken,
-		Expiry:       t.Expiry,
-		raw:          t.Raw,
+		AccessToken:        t.AccessToken,
+		TokenType:          t.TokenType,
+		RefreshToken:       t.RefreshToken,
+		Expiry:             t.Expiry,
+		RefreshTokenExpiry: t.RefreshTokenExpiry,
+		raw:                t.Raw,
 	}
 }
 
