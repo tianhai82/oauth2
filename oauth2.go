@@ -286,6 +286,9 @@ func (tf *tokenRefresher) Token() (*Token, error) {
 	if tf.refreshToken != tk.RefreshToken {
 		tf.refreshToken = tk.RefreshToken
 	}
+	if tk.RefreshTokenExpiry.Year() == 1 {
+		tk.RefreshTokenExpiry = tf.token.RefreshTokenExpiry
+	}
 	return tk, err
 }
 
