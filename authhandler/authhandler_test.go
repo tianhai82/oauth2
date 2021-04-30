@@ -11,7 +11,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"golang.org/x/oauth2"
+	"github.com/tianhai82/oauth2"
 )
 
 func TestTokenExchange_Success(t *testing.T) {

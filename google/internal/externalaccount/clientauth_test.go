@@ -5,11 +5,12 @@
 package externalaccount
 
 import (
-	"golang.org/x/oauth2"
 	"net/http"
 	"net/url"
 	"reflect"
 	"testing"
+
+	"github.com/tianhai82/oauth2"
 )
 
 var clientID = "rbrgnognrhongo3bi4gb9ghg9g"

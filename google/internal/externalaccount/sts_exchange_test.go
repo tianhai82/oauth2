@@ -7,12 +7,13 @@ package externalaccount
 import (
 	"context"
 	"encoding/json"
-	"golang.org/x/oauth2"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+
+	"github.com/tianhai82/oauth2"
 )
 
 var auth = clientAuthentication{

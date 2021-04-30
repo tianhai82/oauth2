@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/oauth2"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -23,6 +22,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/tianhai82/oauth2"
 )
 
 type awsSecurityCredentials struct {
